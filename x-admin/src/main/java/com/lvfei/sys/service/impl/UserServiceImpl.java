@@ -2,6 +2,7 @@ package com.lvfei.sys.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lvfei.common.vo.Result;
 import com.lvfei.sys.entity.User;
 import com.lvfei.sys.mapper.UserMapper;
 import com.lvfei.sys.service.IUserService;
@@ -46,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
             // 存入redis
             loginUser.setPassword(null);
-            redisTemplate.opsForValue().set(key,loginUser,30, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(key,loginUser,60, TimeUnit.MINUTES);
 
             // 返回数据
             Map<String, Object> data = new HashMap<>();
@@ -97,6 +98,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return data;
         }
         return null;
+    }
+
+    @Override
+    public User getAllInfo(String token) {
+        Object obj = redisTemplate.opsForValue().get(token);
+        if(obj != null){
+            return JSON.parseObject(JSON.toJSONString(obj),User.class);
+        }
+        return new User();
     }
 
     @Override

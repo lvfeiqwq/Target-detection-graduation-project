@@ -22,3 +22,41 @@ export function logout() {
     method: 'post'
   })
 }
+export function getAllInfo(token) {
+  return request({
+    url: '/user/getAllInfo',
+    method: 'get',
+    params: { token }
+  })
+}
+
+export default {
+  getCode(phone) {
+    return request({
+      url: '/register/sendMsg',
+      method: 'post',
+      params: {
+        'phone': phone
+      }
+    })
+  },
+  check(registerForm) {
+    return request({
+      url: '/register/check',
+      method: 'post',
+      params: {
+        'username': registerForm.username,
+        'phone': registerForm.phone,
+        'phoneCode': registerForm.phoneCode,
+        'password': registerForm.password
+      }
+    })
+  },
+  getAllInfo(token) {
+    return request({
+      url: '/user/getAllInfo',
+      method: 'get',
+      params: { 'token': token }
+    })
+  }
+}

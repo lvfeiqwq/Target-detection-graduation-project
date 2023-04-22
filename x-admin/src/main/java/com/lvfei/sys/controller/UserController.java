@@ -94,8 +94,9 @@ public class UserController {
 
     @PutMapping
     public Result<?> updateUser(@RequestBody User user){
-        user.setPassword(null);
+//        user.setPassword(null);
         userService.updateById(user);
+        System.out.println(user);
         return Result.success("修改用户成功");
     }
 
@@ -111,4 +112,30 @@ public class UserController {
         return Result.success("删除用户成功");
     }
 
+    @GetMapping("/getAllInfo")
+    public Result<?> getAllInfo(@RequestParam("token") String token){
+        // 根据token获取用户信息，redis
+        System.out.println(token);
+        User user = userService.getAllInfo(token);
+        System.out.println(user);
+        if(user.getId() != null){
+            return Result.success(userService.getById(user.getId()));
+        }
+        return Result.fail(20003,"登录信息无效，请重新登录");
+    }
+
+    @PostMapping("/changePwd")
+    public Result<?>changePassword(@RequestParam("id") Integer id,
+                                   @RequestParam("password") String password) {
+        try {
+            User user = userService.getById(id);
+            user.setPassword(passwordEncoder.encode(password));
+            userService.updateById(user);
+            return Result.success("密码更新成功");
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return Result.fail("更新失败");
+        }
+    }
 }

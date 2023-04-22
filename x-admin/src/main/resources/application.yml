@@ -19,6 +19,14 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
 
+  mvc:
+    contentnegotiation:
+      favor-parameter: true
+      parameter-name: format
+    media-type:
+      json: application/json
+      form: application/x-www-form-urlencoded
+
 logging:
   level:
     com.lvfei: debug

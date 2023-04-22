@@ -3,6 +3,14 @@
     <el-card class="card">
       <div slot="header" class="clearfix">
         <span>Yolo v5检测</span>
+        <el-tooltip placement="top">
+          <div slot="content">
+            1.所有图片均为用户自己上传并检测<br>
+            2.目前暂不支持视频识别<br>
+            3.如需更改样本请前往"检测记录"页面
+          </div>
+          <i class="el-icon-question" />>
+        </el-tooltip>
       </div>
       <el-upload
         ref="upload"
@@ -18,7 +26,7 @@
         :file-list="fileList"
         :auto-upload="true"
       >
-        <el-button slot="trigger" type="primary">上传文件</el-button>
+        <el-button slot="trigger" type="primary">上传图像</el-button>
         <!--        <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器</el-button>-->
         <el-button style="margin-left: 20px;" type="success" @click="gotoDetect">开始检测</el-button>
         <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
@@ -27,7 +35,7 @@
         <el-col :xs="{span: 20}" :sm="{span: 11}" :md="{span: 11}" :lg="{span: 11}" :xl="{span: 11}">
           <el-card
             v-loading="loading1"
-            style="width: 600px;height: 480px;"
+            style="width: 600px;height: 450px;"
             element-loading-text="拼命加载中"
             element-loading-spinner="el-icon-loading"
             element-loading-background="rgba(255, 255, 255, 1)"
@@ -36,14 +44,14 @@
               <span>原始图像</span>
             </div>
             <div style="text-align: center;">
-              <el-image v-if="show2" :src="base641" :preview-src-list="[base641]" :z-index="height" style="width: 500px;height: 400px;object-fit: contain; max-width: 100%;" />
+              <el-image v-if="show2" :src="base641" :preview-src-list="[base641]" :z-index="height" style="height: 400px;object-fit: contain; max-width: 100%;" />
             </div>
           </el-card>
         </el-col>
         <el-col :xs="{span: 20}" :sm="{span: 11}" :md="{span: 11}" :lg="{span: 11}" :xl="{span: 11}">
           <el-card
             v-loading="loading2"
-            style="width: 600px;height: 480px;"
+            style="width: 600px;height: 450px;"
             element-loading-text="正在检测中"
             element-loading-spinner="el-icon-loading"
             element-loading-background="rgba(255, 255, 255, 1)"
@@ -52,7 +60,7 @@
               <span>检测图像</span>
             </div>
             <div style="text-align: center;">
-              <el-image v-if="show" :src="base64" :preview-src-list="[base64]" :z-index="height" style="width: 500px;height: 400px; justify-content:center " />
+              <el-image v-if="show" :src="base64" :preview-src-list="[base64]" :z-index="height" style="height: 400px; justify-content:center " />
             </div>
           </el-card>
         </el-col>
@@ -68,6 +76,7 @@ export default {
   data() {
     return {
       src: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg',
+      id: null,
       fileList: [],
       imageUrl: '',
       base64: '',
@@ -105,6 +114,7 @@ export default {
       this.base641 = response.data.base64
       // this.url1 = 'http://localhost:9999/detect/' + response.data.image.url
       this.show2 = true
+      this.id = response.data.image.id
       setTimeout(() => {
         this.loading1 = false
       }, 1000)

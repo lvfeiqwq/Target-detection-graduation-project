@@ -36,23 +36,43 @@ export const constantRoutes = [
     component: () => import('@/views/login/index'),
     hidden: true
   },
-
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/register/index'),
+    hidden: true
+  },
   {
     path: '/404',
     component: () => import('@/views/404'),
     hidden: true
   },
-
+  {
+    path: '/profile',
+    component: Layout,
+    redirect: '/profile/index',
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/profile/index'),
+        name: 'Profile',
+        meta: { title: '个人信息', icon: 'user', noCache: true }
+      }
+    ]
+  },
   {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
-    children: [{
-      path: 'dashboard',
-      name: 'Dashboard',
-      component: () => import('@/views/dashboard/index'),
-      meta: { title: '首页', icon: 'dashboard', affix: true }
-    }]
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/views/dashboard/index'),
+        name: 'Dashboard',
+        meta: { title: '首页', icon: 'dashboard', affix: true }
+      }
+    ]
   },
 
   {
@@ -60,19 +80,12 @@ export const constantRoutes = [
     component: Layout,
     redirect: '/sys/user',
     name: 'sysManage',
-    meta: { title: '用户管理', icon: 'sys' },
     children: [
       {
         path: 'user',
         name: 'user',
         component: () => import('@/views/sys/user'),
         meta: { title: '用户管理', icon: 'userManage' }
-      },
-      {
-        path: 'role',
-        name: 'role',
-        component: () => import('@/views/sys/role'),
-        meta: { title: '角色管理', icon: 'roleManage' }
       }
     ]
   },
@@ -80,7 +93,7 @@ export const constantRoutes = [
   {
     path: '/incident',
     component: Layout,
-    redirect: '/incident/test1',
+    redirect: '/incident',
     name: 'incident',
     meta: { title: '事件管理', icon: 'form' },
     children: [

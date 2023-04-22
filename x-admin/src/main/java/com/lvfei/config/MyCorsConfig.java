@@ -20,6 +20,6 @@ public class MyCorsConfig {
         UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
         urlBasedCorsConfigurationSource.registerCorsConfiguration("/**",configuration);
 
-        return  new CorsFilter(urlBasedCorsConfigurationSource);
+        return new CorsFilter(urlBasedCorsConfigurationSource);
     }
 }

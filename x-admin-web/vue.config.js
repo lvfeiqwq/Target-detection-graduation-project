@@ -35,8 +35,15 @@ module.exports = {
     overlay: {
       warnings: false,
       errors: true
-    },
-    //before: require('./mock/mock-server.js')
+    }
+    // before: require('./mock/mock-server.js')
+  },
+  css: {
+    loaderOptions: {
+      scss: {
+        prependData: `@import "@/styles/variables.scss";@import "@/styles/mixin.scss";`// 引入全局 SasS 变量的文件（对应你全局文件的路径）
+      }
+    }
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that

@@ -1,5 +1,6 @@
 package com.lvfei.sys.service;
 
+import com.lvfei.common.vo.Result;
 import com.lvfei.sys.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -18,6 +19,8 @@ public interface IUserService extends IService<User> {
     Map<String, Object> login(User user);
 
     Map<String, Object> getUserInfo(String token);
+
+    User getAllInfo(String token);
 
     void logout(String token);
 }

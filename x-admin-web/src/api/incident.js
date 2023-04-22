@@ -47,5 +47,15 @@ export default {
       url: `/incident/${id}`,
       method: 'delete'
     })
+  },
+  getEchartsData(startDate, endDate) {
+    return request({
+      url: '/incident/echarts',
+      method: 'post',
+      params: {
+        startDate: startDate,
+        endDate: endDate
+      }
+    })
   }
 }

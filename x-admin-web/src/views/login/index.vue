@@ -40,9 +40,10 @@
           <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
       </el-form-item>
-
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">登 录</el-button>
-
+      <div style="display: flex; justify-content: space-between">
+        <el-button :loading="loading" type="primary" style="width:50%; margin-bottom:30px;" @click.native.prevent="handleLogin">登 录</el-button>
+        <el-button :loading="loading" type="primary" style="width:50%;margin-bottom:30px;" @click="handleRegister">注 册</el-button>
+      </div>
     </el-form>
   </div>
 </template>
@@ -115,6 +116,9 @@ export default {
           return false
         }
       })
+    },
+    handleRegister() {
+      this.$router.push('/register')
     }
   }
 }

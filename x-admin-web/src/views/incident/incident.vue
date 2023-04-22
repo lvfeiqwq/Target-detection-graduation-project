@@ -1,9 +1,15 @@
 <template>
-  <div>
+  <div
+    v-loading="loading"
+    class="container"
+    element-loading-text="拼命加载中"
+    element-loading-spinner="el-icon-loading"
+    element-loading-background="rgba(255, 255, 255, 1)"
+  >
     <el-card id="search" class="search">
       <el-row>
         <el-col :span="20">
-          <el-select v-model="searchModel.category" placeholder="请选择事件种类">
+          <el-select v-model="searchModel.category" placeholder="请选择事件种类" @change="getIncidentList">
             <el-option
               v-for="item in categories"
               :key="item.value"
@@ -24,8 +30,7 @@
             range-separator="至"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
-          >
-          </el-date-picker>
+          />
           <el-button
             type="primary"
             round
@@ -54,6 +59,9 @@
 
     <el-card>
       <el-table :loading="loading" :data="incidentList" stripe style="width: 100%">
+        <template slot="empty">
+          <el-empty :image-size="200" />
+        </template>
         <el-table-column label="#" width="80">
           <template slot-scope="scope">
             <!-- (pageNo-1) * pageSize + index + 1 -->
@@ -62,10 +70,10 @@
             }}
           </template>
         </el-table-column>
-        <el-table-column prop="id" label="事件ID" width="120"/>
-        <el-table-column prop="category" :formatter="tableFormatter" label="事件种类" width="200"/>
-        <el-table-column prop="incidentPlace" label="发生地点" width="180"/>
-        <el-table-column prop="incidentDate" label="发生日期" width="230" sortable/>
+        <el-table-column prop="id" label="事件ID" width="120" />
+        <el-table-column prop="category" :formatter="tableFormatter" label="事件种类" width="200" />
+        <el-table-column prop="incidentPlace" label="发生地点" width="180" />
+        <el-table-column prop="incidentDate" label="发生日期" width="230" sortable />
         <el-table-column prop="detail" label="事件细节">
           <!--          <template slot-scope="scope">-->
           <!--            <el-tag v-if="scope.row.status == 1">正常</el-tag>-->
@@ -176,12 +184,14 @@
             :on-preview="handlePictureCardPreview"
             :on-remove="handleRemove"
             :on-change="handleChange"
+            :on-exceed="handleExceed"
             :auto-upload="false"
             :file-list="fileList"
+            limit="1"
             accept=".jpg,.png"
           >
-            <i class="el-icon-plus"/>
-            <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
+            <i class="el-icon-plus" />
+            <div slot="tip" class="el-upload__tip">只能上传一个jpg/png文件，且不超过500kb</div>
           </el-upload>
           <el-dialog :visible.sync="dialogVisible">
             <img width="100%" :src="dialogImageUrl" alt="">
@@ -199,6 +209,7 @@
             :on-remove="handleRemove"
             :on-change="handleChange"
             :before-upload="handleBeforeUpload"
+            :on-exceed="handleExceed"
             :auto-upload="false"
             :file-list="fileList2"
             accept=".jpg,.png"
@@ -208,8 +219,9 @@
               :src="base64"
               class="avatar"
               alt=""
-              style="width: 150px; height: 150px"/>
-<!--            <i v-else class="el-icon-upload"/>-->
+              style="width: 150px; height: 150px"
+            />
+            <!--            <i v-else class="el-icon-upload"/>-->
             <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
           </el-upload>
           <el-dialog :visible.sync="dialogVisible">
@@ -227,10 +239,13 @@
 
 <script>
 import incidentApi from '@/api/incident'
+import userApi from '@/api/user'
+import { getToken } from '@/utils/auth'
 
 export default {
   data() {
     return {
+      id: '',
       base64: '',
       fileList: [],
       fileList2: [],
@@ -303,6 +318,10 @@ export default {
     handleRemove(file, fileList) {
       console.log(file, fileList)
     },
+    handleExceed(file, fileList) {
+      this.$message.warning('最多上传一个文件')
+      this.fileList = file
+    },
     handlePictureCardPreview(file) {
       this.dialogImageUrl = file.url
       this.dialogVisible = true
@@ -349,11 +368,13 @@ export default {
     getIncidentList() {
       this.loading = true
       // console.log(this.searchModel)
-      incidentApi.getIncidentList(this.searchModel).then((response) => {
+      incidentApi.getIncidentList(this.searchModel).then(response => {
         this.incidentList = response.data.rows
         this.total = response.data.total
-        this.loading = false
       })
+      setTimeout(() => {
+        this.loading = false
+      }, 800)
     },
     clearForm() {
       this.$refs['incidentFormRef'].resetFields()
@@ -366,9 +387,12 @@ export default {
     },
     openEditUI(id) {
       if (id == null) {
+        this.fileList = []
         this.title = '新增事件'
-        this.$refs['incidentFormRef'].resetFields()
+        this.incidentForm = {}
       } else {
+        this.fileList2 = []
+        this.fileList = []
         this.title = '修改事件'
         // 根据id查询用户数据
         incidentApi.getIncidentById(id).then(response => {
@@ -390,6 +414,13 @@ export default {
           if (this.fileList.length !== 0) {
             formData.append('file', this.fileList[0].raw)
           }
+          userApi.getAllInfo(getToken()).then(
+            response => {
+              this.id = response.data.id
+            }
+          )
+          formData.append('id', this.id)
+          formData.append('time', new Date().toString())
           incidentApi.saveIncident(formData, this.incidentForm.id).then(response => {
             // 成功提示
             this.$message({
@@ -400,6 +431,7 @@ export default {
             this.dialogFormVisible = false
             // 刷新表格
             this.incidentForm = {}
+            this.fileList2 = []
             this.getIncidentList()
           })
         } else {

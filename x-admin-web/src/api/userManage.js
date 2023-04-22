@@ -45,5 +45,15 @@ export default {
       url: `/user/${id}`,
       method: 'delete'
     })
+  },
+  changePassword(id, password) {
+    return request({
+      url: '/user/changePwd',
+      method: 'post',
+      params: {
+        'id': id,
+        'password': password
+      }
+    })
   }
 }

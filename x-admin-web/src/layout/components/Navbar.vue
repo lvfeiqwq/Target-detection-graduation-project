@@ -11,12 +11,12 @@
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown" class="user-dropdown">
-          <router-link to="/">
+          <router-link to="/profile">
             <el-dropdown-item>
               个人信息
             </el-dropdown-item>
           </router-link>
-          <a target="_blank" href="http://www.baidu.com">
+          <a target="_blank" href="https://www.sunward.com.cn/">
             <el-dropdown-item>公司主页</el-dropdown-item>
           </a>
           <el-dropdown-item divided @click.native="logout">

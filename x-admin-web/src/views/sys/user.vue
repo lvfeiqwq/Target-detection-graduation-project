@@ -1,5 +1,11 @@
 <template>
-  <div>
+  <div
+    v-loading="loading"
+    class="container"
+    element-loading-text="拼命加载中"
+    element-loading-spinner="el-icon-loading"
+    element-loading-background="rgba(255, 255, 255, 1)"
+  >
     <!-- 搜索栏 -->
     <el-card id="search" class="search">
       <el-row>
@@ -36,7 +42,7 @@
     <!-- 结果列表 -->
     <el-card>
       <el-table :data="userList" stripe style="width: 100%">
-        <el-table-column label="#" width="80">
+        <el-table-column label="#" width="150">
           <template slot-scope="scope">
             <!-- (pageNo-1) * pageSize + index + 1 -->
             {{
@@ -44,15 +50,9 @@
             }}
           </template>
         </el-table-column>
-        <el-table-column prop="id" label="用户ID" width="180" />
-        <el-table-column prop="username" label="用户名" width="180" />
-        <el-table-column prop="phone" label="电话" width="180" />
-        <el-table-column prop="status" label="用户状态" width="180">
-          <template slot-scope="scope">
-            <el-tag v-if="scope.row.status == 1">正常</el-tag>
-            <el-tag v-else type="danger">禁用</el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="id" label="用户ID" width="250" />
+        <el-table-column prop="username" label="用户名" width="250" />
+        <el-table-column prop="phone" label="电话" width="300" />
         <el-table-column prop="email" label="电子邮件" />
         <el-table-column label="操作" width="180">
           <template slot-scope="scope">
@@ -115,13 +115,6 @@
         <el-form-item label="联系电话" :label-width="formLabelWidth">
           <el-input v-model="userForm.phone" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="用户状态" :label-width="formLabelWidth">
-          <el-switch
-            v-model="userForm.status"
-            :active-value="1"
-            :inactive-value="0"
-          />
-        </el-form-item>
         <el-form-item
           label="电子邮件"
           prop="email"
@@ -143,17 +136,26 @@ import userApi from '@/api/userManage'
 
 export default {
   data() {
-    var checkEmail = (rule, value, callback) => {
-      var reg =
+    const checkEmail = (rule, value, callback) => {
+      const reg =
         /^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*\.[a-z]{2,}$/
       if (!reg.test(value)) {
         return callback(new Error('邮箱格式错误'))
       }
       callback()
     }
+    const validatePhone = (rule, value, callback) => {
+      const phoneRegex = /^1[3-9]\d{9}$/
+      if (!phoneRegex.test(value)) {
+        callback(new Error('手机号码不合法'))
+      } else {
+        callback()
+      }
+    }
     return {
       formLabelWidth: '130px',
       userForm: {},
+      loading: false,
       dialogFormVisible: false,
       title: '',
       total: 0,
@@ -173,7 +175,7 @@ export default {
           }
         ],
         password: [
-          { required: true, message: '请输入登录初始密码', trigger: 'blur' },
+          { required: true, message: '请输入合法的密码', trigger: 'blur' },
           {
             min: 6,
             max: 16,
@@ -181,8 +183,12 @@ export default {
             trigger: 'blur'
           }
         ],
+        phone: [
+          { required: true, message: '请输入合法的手机号码', trigger: 'blur' },
+          { validator: validatePhone, trigger: 'blur' }
+        ],
         email: [
-          { required: true, message: '请输入电子邮件', trigger: 'blur' },
+          { required: false, message: '请输入合法的电子邮件', trigger: 'blur' },
           { validator: checkEmail, trigger: 'blur' }
         ]
       }
@@ -259,10 +265,14 @@ export default {
       this.getUserList()
     },
     getUserList() {
+      this.loading = true
       userApi.getUserList(this.searchModel).then((response) => {
         this.userList = response.data.rows
         this.total = response.data.total
       })
+      setTimeout(() => {
+        this.loading = false
+      }, 600)
     }
   }
 }

@@ -1,12 +1,15 @@
 package com.lvfei.sys.controller;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.lvfei.config.ZhenziConfig;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.lvfei.common.vo.Result;
 import com.lvfei.sys.entity.Incident;
 import com.lvfei.sys.entity.User;
+import com.lvfei.sys.mapper.IncidentMapper;
 import com.lvfei.sys.service.IIncidentService;
 import com.lvfei.sys.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.io.*;
 import java.nio.file.Files;
@@ -24,6 +28,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -41,6 +46,10 @@ public class IncidentController {
     IIncidentService incidentService;
     @Autowired
     IUserService userService;
+    @Autowired
+    ZhenziConfig zhenZi;
+    @Autowired
+    IncidentMapper incidentMapper;
     private static final String filePath="D:/Desktop/myproject/x-admin/images/incident/";
     @GetMapping("/list")
     public Result<Map<String,Object>> getIncidentList(@RequestParam(value = "category",required = false) String category,
@@ -59,20 +68,9 @@ public class IncidentController {
             wrapper.gt(StringUtils.hasLength(beginDate),Incident::getIncidentDate,df.parse(beginDate));
             wrapper.lt(StringUtils.hasLength(endDate),Incident::getIncidentDate,df.parse(endDate));
         }
-//        Date begin = df.parse(beginDate);
-//        Date end = df.parse(endDate);
-////        System.out.println(begin);
-//        if (begin!=null) {
-//            wrapper.gt(Incident::getIncidentDate, begin);
-//        }
-//        if (end!=null) {
-//            wrapper.lt(Incident::getIncidentDate,end);
-//        }
-        wrapper.orderByDesc(Incident::getId);
-
+        wrapper.orderByDesc(Incident::getIncidentDate);
         Page<Incident> page = new Page<>(pageNo,pageSize);
         incidentService.page(page,wrapper);
-
         Map<String,Object> data = new HashMap<>();
         data.put("total",page.getTotal());
         data.put("rows",page.getRecords());
@@ -111,11 +109,16 @@ public class IncidentController {
 
     @PostMapping("/addIncident")
 //    @DateTimeFormat(pattern=“yyyy-MM-dd HH:mm:ss”)
-    public Result<?> addIncident(Incident incident, @RequestParam(value ="file",required = false) MultipartFile file) throws IOException {
+    public Result<?> addIncident(Incident incident, @RequestParam(value ="file",required = false) MultipartFile file,
+                                                    @RequestParam(value = "time") String time,
+                                                    @RequestParam(value = "id")Integer id) throws Exception {
         System.out.println(incident);
 //        System.out.println(incident+"--------------"+file);
 //        incidentService.save(incident);
 //        System.out.println(incident.getId());
+        User user = userService.getById(id);
+        com.alibaba.fastjson.JSONObject json = zhenZi.warning_message(user.getPhone(),incident.getCategory(),time);
+        System.out.println(json);
         if(file == null ){
             incidentService.save(incident);
             System.out.println("----------------------------------------------");
@@ -137,20 +140,11 @@ public class IncidentController {
             }catch (IllegalStateException | IOException e ) {
                 //处理异常
                 System.out.println("文件存失败！！！！！！！！！！！！");
+                return Result.fail("文件上传失败");
             }
         }
         return Result.success("新增事件成功");
     }
-//    @PostMapping("/addIncident")
-//    public Result<?> addIncident(@RequestBody Map<String,String>map){
-//        System.out.println(map);
-////        System.out.println(incident+"--------------"+file);
-////        if(file == null){
-////            System.out.println("----------------------------------------------");
-////        }
-////        incidentService.save(incident);
-//        return Result.success("新增事件成功");
-//    }
     @DeleteMapping("/{id}")
     public Result<Incident> deleteIncidentById(@PathVariable("id") Integer id){
         incidentService.removeById(id);
@@ -159,7 +153,7 @@ public class IncidentController {
 
     @PostMapping("/updateIncident")
     public Result<?> updateIncident(Incident incident,@RequestParam(value ="file",required = false) MultipartFile file){
-        System.out.println(incident);
+//        System.out.println(incident);
         if(file == null ){
             incidentService.updateById(incident);
             System.out.println("----------------------------------------------");
@@ -191,5 +185,94 @@ public class IncidentController {
             }
         }
         return Result.success("修改事件成功");
+    }
+
+    @PostMapping("/echarts")
+    public Result<?>getEchartsData(@RequestParam(value = "startDate") String startDate,
+                                   @RequestParam(value = "endDate") String endDate) throws ParseException {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate start = LocalDate.parse(startDate, formatter);
+        LocalDate end = LocalDate.parse(endDate, formatter);
+
+        // 生成时间序列
+        List<String> dates = start.datesUntil(end.plusDays(1))
+                .map(date -> date.format(formatter))
+                .collect(Collectors.toList());
+
+
+        int cnt1=0,cnt2=0,cnt3=0;
+
+        QueryWrapper<Incident> wrapper1 = new QueryWrapper<>();
+        wrapper1.between("incident_date", start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        wrapper1.select("DATE_FORMAT(incident_date, '%Y-%m-%d') AS date", "COUNT(*) AS count");
+        wrapper1.groupBy("date");
+        //没带安全帽也没穿工装
+        wrapper1.eq("category",1);
+        List<Map<String, Object>> list1 = incidentMapper.selectMaps(wrapper1);
+        // 将查询结果合并到时间序列中
+        Map<String, Integer> countMap1 = new LinkedHashMap<>();
+        dates.forEach(date -> countMap1.put(date, 0));
+        for (Map<String, Object> map : list1) {
+            String date = (String) map.get("date");
+            int count = ((Long) map.get("count")).intValue();
+            countMap1.put(date, count);
+            cnt1 += count;
+        }
+
+
+        QueryWrapper<Incident> wrapper2 = new QueryWrapper<>();
+        wrapper2.between("incident_date", start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        wrapper2.select("DATE_FORMAT(incident_date, '%Y-%m-%d') AS date", "COUNT(*) AS count");
+        wrapper2.groupBy("date");
+        //没带安全帽
+        wrapper2.eq("category",2);
+        List<Map<String, Object>> list2 = incidentMapper.selectMaps(wrapper2);
+
+        // 将查询结果合并到时间序列中
+        Map<String, Integer> countMap2 = new LinkedHashMap<>();
+        dates.forEach(date -> countMap2.put(date, 0));
+        for (Map<String, Object> map : list2) {
+            String date = (String) map.get("date");
+            int count = ((Long) map.get("count")).intValue();
+            countMap2.put(date, count);
+            cnt2 += count;
+        }
+
+        QueryWrapper<Incident> wrapper3 = new QueryWrapper<>();
+        wrapper3.between("incident_date", start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        wrapper3.select("DATE_FORMAT(incident_date, '%Y-%m-%d') AS date", "COUNT(*) AS count");
+        wrapper3.groupBy("date");
+        //没穿工装
+        wrapper3.eq("category",3);
+        List<Map<String, Object>> list3 = incidentMapper.selectMaps(wrapper3);
+        Map<String, Integer> countMap3 = new LinkedHashMap<>();
+        dates.forEach(date -> countMap3.put(date, 0));
+        for (Map<String, Object> map : list3) {
+            String date = (String) map.get("date");
+            int count = ((Long) map.get("count")).intValue();
+            countMap3.put(date, count);
+            cnt3 += count;
+        }
+
+        // 按时间从小到大排序，并将时间和事件数量分别存储在列表中
+        // 存时间
+        List<String> sortedDates = new ArrayList<>(countMap1.keySet());
+        Map<String, List<Object>> result = new LinkedHashMap<>();
+        Collections.sort(sortedDates);
+        List<Object> objectList = new ArrayList<>(sortedDates);
+        result.put("dates", objectList);
+        //存不同数量
+        List<Object> sortedCounts1 = sortedDates.stream().map(countMap1::get).collect(Collectors.toList());
+        List<Object> sortedCounts2 = sortedDates.stream().map(countMap2::get).collect(Collectors.toList());
+        List<Object> sortedCounts3 = sortedDates.stream().map(countMap3::get).collect(Collectors.toList());
+        result.put("counts1", sortedCounts1);
+        result.put("counts2", sortedCounts2);
+        result.put("counts3", sortedCounts3);
+        List<Object> total = new ArrayList<>();
+        total.add(cnt1);
+        total.add(cnt2);
+        total.add(cnt3);
+        result.put("total",total);
+        return Result.success(result);
     }
 }
